@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Avatar Chat — Webview</title>
+  <style>
+    :root{--bg:#000;--panel:#141414;--muted:rgba(255,255,255,0.6);--red:#e50914}
+    *{box-sizing:border-box}
+    html,body,#app{height:100%;margin:0}
+    body{background:linear-gradient(135deg,var(--panel) 0%, #000 100%);font-family:Inter,Segoe UI,Arial;color:#fff}
+    .container{max-width:920px;margin:18px auto;height:calc(100% - 36px);display:flex;flex-direction:column;border-radius:10px;overflow:hidden}
+    .header{background:linear-gradient(90deg,var(--red) 0%,#b81d24 100%);padding:18px 22px;display:flex;justify-content:space-between;align-items:center}
+    .brand{font-weight:800;letter-spacing:2px;font-size:22px}
+    .subtitle{font-size:11px;opacity:0.9;margin-top:2px;font-weight:300}
+    .profile img{width:40px;height:40px;border-radius:8px;border:2px solid rgba(255,255,255,0.2);object-fit:cover}
+    .main{flex:1;display:flex;flex-direction:column;background:linear-gradient(180deg,rgba(10,10,10,0.2),transparent);padding:20px;gap:16px}
+    .messages{flex:1;overflow:auto;display:flex;flex-direction:column;gap:12px;padding-right:6px}
+    .msg{display:flex;gap:12px;align-items:flex-end;max-width:78%}
+    .msg.incoming{align-self:flex-start}
+    .msg.outgoing{align-self:flex-end;flex-direction:row-reverse}
+    .avatar{width:44px;height:44px;border-radius:10px;flex-shrink:0;background:#333;display:inline-block}
+    .bubble{padding:12px 14px;border-radius:12px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.04);box-shadow:0 6px 18px rgba(0,0,0,0.4);}
+    .bubble.out{background:linear-gradient(135deg,var(--red),#b81d24);}
+    .meta{font-size:11px;color:var(--muted);margin-top:6px;text-align:right}
+    .footer{padding:16px 20px;background:rgba(0,0,0,0.25);display:flex;gap:12px;align-items:center}
+    .input{flex:1;padding:12px 14px;border-radius:10px;border:1px solid rgba(255,255,255,0.06);background:rgba(255,255,255,0.02);color:#fff}
+    .send{background:linear-gradient(135deg,var(--red),#b81d24);border:none;color:#fff;padding:10px 14px;border-radius:10px;cursor:pointer}
+    .diag{position:fixed;left:18px;bottom:18px;padding:8px 12px;background:#111;border-radius:6px;font-size:12px;color:var(--muted);opacity:0.9}
+    /* small screens */
+    @media (max-width:640px){.container{margin:6px;height:calc(100% - 12px)}.brand{font-size:18px}.avatar{width:36px;height:36px}}
+  </style>
+</head>
+<body>
+  <div id="app">
+    <div class="container" role="main">
+      <div class="header">
+        <div>
+          <div class="brand">AVATAR</div>
+          <div class="subtitle">CHAT</div>
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px">
+          <div class="profile"><img src="../backend/public/avatar.jpg" alt="you" onerror="this.style.opacity=0.6"/></div>
+        </div>
+      </div>
+
+      <div class="main">
+    <div class="messages" id="messages" aria-live="polite"></div>
+    <div style="font-size:12px;color:var(--muted);opacity:0.9">Legend: <strong>avatar.jpg</strong> = you (avatar1) • <strong>avatar2.jpg</strong> = other person</div>
+
+        <div class="footer">
+          <input id="input" class="input" placeholder="Start your conversation..." aria-label="Message input" />
+          <button id="send" class="send">Send</button>
+        </div>
+      </div>
+    </div>
+    <div class="diag">Standalone webview — JS must be enabled</div>
+  </div>
+
+  <script>
+    // Minimal, dependency-free webview that simulates chat locally
+    (function(){
+      const messagesEl = document.getElementById('messages');
+      const inputEl = document.getElementById('input');
+      const sendBtn = document.getElementById('send');
+
+      const now = () => new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
+
+      const render = (items) => {
+        messagesEl.innerHTML = '';
+        items.forEach(it=>{
+          const row = document.createElement('div');
+          row.className = 'msg ' + (it.sender==='user' ? 'outgoing' : 'incoming');
+          const avatar = document.createElement('div'); avatar.className='avatar';
+          if(it.img){ avatar.style.backgroundImage='url('+it.img+')'; avatar.style.backgroundSize='cover'; }
+          const bubble = document.createElement('div'); bubble.className='bubble'+(it.sender==='user' ? ' out' : '');
+          const label = '<div style="font-size:11px;font-weight:600;margin-bottom:6px;">'+(it.sender==='user' ? 'You' : 'Other')+'</div>';
+          bubble.innerHTML = label + '<div>'+escapeHtml(it.text)+'</div><div class="meta">'+it.time+'</div>';
+          row.appendChild(avatar);
+          row.appendChild(bubble);
+          messagesEl.appendChild(row);
+        });
+        messagesEl.scrollTop = messagesEl.scrollHeight;
+      };
+
+      const escapeHtml = (s)=> String(s).replace(/[&<>"']/g, function(m){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":"&#39;"}[m];});
+
+      // initial messages
+      const items = [
+        {sender:'bot', text:'Welcome to Avatar Chat — this is a standalone webview demo.', time:now(), img:'../backend/public/avatar2.jpg'},
+        {sender:'bot', text:'Type a message and press Send to simulate the chat.', time:now(), img:'../backend/public/avatar2.jpg'}
+      ];
+
+      sendBtn.addEventListener('click', doSend);
+      inputEl.addEventListener('keydown', function(e){ if(e.key==='Enter') doSend(); });
+
+      function doSend(){
+        const t = inputEl.value.trim();
+        if(!t) return; inputEl.value='';
+        const userMsg = {sender:'user', text:t, time:now(), img:'../backend/public/avatar.jpg'};
+        items.push(userMsg); render(items);
+        // fake bot reply after 500ms
+        setTimeout(()=>{
+          const reply = generateReply(t);
+          items.push({sender:'bot', text:reply, time:now(), img:'../backend/public/avatar2.jpg'});
+          render(items);
+        }, 450);
+      }
+
+      function generateReply(u){
+        const s = u.toLowerCase();
+        if(s.includes('hello')||s.includes('hi')) return 'Hello! How can I help?';
+        if(s.includes('help')) return 'I can help with a demo — ask anything.';
+        if(s.includes('weather')) return 'I can\'t fetch live weather in this demo.';
+        if(s.endsWith('?')) return 'Interesting question — in the demo I reply with canned answers.';
+        return 'Thanks — this is a simulated bot reply.';
+      }
+
+      // initial render
+      render(items);
+
+      // expose for debugging
+      window.__AVATAR_WEBVIEW = {items, render};
+    })();
+  </script>
+</body>
+</html>

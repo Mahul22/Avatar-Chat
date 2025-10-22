@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Avatar Chat - Netflix Style</title>
+  
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: Arial, sans-serif;
+      background: #000000;
+      color: #ffffff;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    #app {
+      height: 100vh;
+      width: 100vw;
+    }
+
+    .app-root { 
+      background: linear-gradient(135deg, #141414 0%, #000000 100%);
+      height: 100vh;
+    }
+
+    .netflix-container { 
+      width: 100%; 
+      max-width: 900px; 
+      height: 100vh; 
+      margin: 0 auto; 
+      display: flex; 
+      flex-direction: column; 
+      background: rgba(20, 20, 20, 0.95);
+    }
+
+    .netflix-header { 
+      background: linear-gradient(90deg, #e50914 0%, #b81d24 100%);
+      color: #ffffff; 
+      padding: 20px 24px; 
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .logo-text { 
+      font-weight: bold; 
+      font-size: 28px;
+      letter-spacing: 2px;
+    }
+
+    .logo-subtitle {
+      font-size: 12px;
+      letter-spacing: 4px;
+      opacity: 0.9;
+    }
+
+    .profile-avatar {
+      width: 40px;
+      height: 40px;
+      border-radius: 8px;
+      border: 2px solid rgba(255, 255, 255, 0.3);
+    }
+
+    .chat-window { 
+      flex: 1; 
+      display: flex; 
+      flex-direction: column; 
+      background: rgba(20, 20, 20, 0.9);
+      padding: 24px; 
+    }
+
+    .messages { 
+      flex: 1; 
+      overflow-y: auto; 
+      display: flex; 
+      flex-direction: column; 
+      gap: 16px;
+    }
+
+    .message-row { 
+      display: flex; 
+      align-items: flex-start; 
+    }
+
+    .message-row.incoming { 
+      justify-content: flex-start; 
+      gap: 12px; 
+    }
+
+    .message-row.outgoing { 
+      justify-content: flex-end; 
+      gap: 12px; 
+    }
+
+    .avatar { 
+      width: 44px; 
+      height: 44px; 
+      border-radius: 12px; 
+      border: 2px solid rgba(229, 9, 20, 0.3);
+      flex-shrink: 0;
+    }
+
+    .bubble { 
+      max-width: 70%; 
+      padding: 16px 20px; 
+      border-radius: 16px; 
+      background: rgba(255, 255, 255, 0.1);
+      color: #ffffff;
+    }
+
+    .message-row.outgoing .bubble { 
+      background: linear-gradient(135deg, #e50914 0%, #b81d24 100%);
+    }
+
+    .message-row.outgoing .avatar { 
+      order: 2;
+    }
+
+    .meta { 
+      font-size: 11px; 
+      color: rgba(255, 255, 255, 0.6); 
+      margin-top: 8px; 
+      text-align: right;
+    }
+
+    .message-row.incoming .meta {
+      text-align: left;
+    }
+
+    .netflix-footer { 
+      padding: 20px 24px; 
+      background: rgba(20, 20, 20, 0.8);
+    }
+
+    .netflix-input-bar { 
+      display: flex; 
+      gap: 16px; 
+      align-items: center;
+    }
+
+    .input-container {
+      flex: 1;
+    }
+
+    .netflix-input { 
+      width: 100%;
+      padding: 16px 20px; 
+      border-radius: 12px; 
+      border: 2px solid rgba(255, 255, 255, 0.1);
+      background: rgba(255, 255, 255, 0.05);
+      color: #ffffff;
+      font-size: 16px;
+      outline: none;
+    }
+
+    .netflix-input::placeholder {
+      color: rgba(255, 255, 255, 0.5);
+    }
+
+    .netflix-input:focus {
+      border-color: #e50914;
+    }
+
+    .netflix-send-btn { 
+      background: linear-gradient(135deg, #e50914 0%, #b81d24 100%);
+      color: white; 
+      border: none; 
+      padding: 16px; 
+      border-radius: 12px; 
+      cursor: pointer;
+      min-width: 52px;
+      height: 52px;
+    }
+
+    .netflix-send-btn:hover {
+      background: linear-gradient(135deg, #f40612 0%, #d01e2a 100%);
+    }
+
+    .loading-screen {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: #000;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      z-index: 9999;
+    }
+  </style>
+</head>
+<body>
+  <!-- Diagnostic banner: visible without JS to help debug blank screen -->
+  <div id="diagnostic-banner" style="position:fixed;top:0;left:0;right:0;background:#ff3b30;color:#fff;padding:10px 12px;font-weight:700;z-index:10000;text-align:center;">
+    If the screen stays black, open developer tools (F12) and check the console. This banner is a diagnostic.
+  </div>
+  <div id="loading-screen" class="loading-screen">
+    Loading Avatar Chat...
+  </div>
+  
+  <div id="app" style="display: none;">
+    <div class="app-root">
+      <div class="netflix-container">
+        <header class="netflix-header">
+          <div class="netflix-logo">
+            <span class="logo-text">AVATAR</span>
+            <span class="logo-subtitle">CHAT</span>
+          </div>
+          <div class="header-controls">
+            <div class="user-profile">
+              <img src="/avatar.jpg" alt="Profile" class="profile-avatar" />
+            </div>
+          </div>
+        </header>
+
+        <div class="chat-window">
+          <div class="messages" ref="messagesRef">
+            <div v-for="(msg, i) in messages" :key="i" :class="['message-row', msg.sender === 'user' ? 'outgoing' : 'incoming']">
+              <img v-if="msg.avatar" :src="msg.avatar" class="avatar" alt="avatar" />
+              <div class="bubble">
+                <div class="text">{{ msg.text }}</div>
+                <div class="meta">{{ formatTime(msg.time) }}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <footer class="netflix-footer">
+          <div class="netflix-input-bar">
+            <div class="input-container">
+              <input 
+                type="text" 
+                v-model="inputMessage" 
+                @keydown.enter.prevent="sendMessage" 
+                placeholder="Start your conversation..." 
+                class="netflix-input"
+              />
+            </div>
+            <button class="netflix-send-btn" @click="sendMessage">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M2 21L23 12L2 3V10L17 12L2 14V21Z" fill="currentColor"/>
+              </svg>
+            </button>
+          </div>
+        </footer>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.1/socket.io.js"></script>
+  
+  <script>
+    console.log('Starting app initialization...');
+    
+    function showApp() {
+      document.getElementById('loading-screen').style.display = 'none';
+      const diag = document.getElementById('diagnostic-banner');
+      if (diag) diag.style.display = 'none';
+      document.getElementById('app').style.display = 'block';
+      console.log('App shown');
+    }
+    
+    function showError(message) {
+      const loadingScreen = document.getElementById('loading-screen');
+      loadingScreen.innerHTML = `
+        <div style="text-align: center;">
+          <h2 style="color: #e50914; margin-bottom: 10px;">Error</h2>
+          <p>${message}</p>
+          <button onclick="location.reload()" style="background: #e50914; color: white; border: none; padding: 10px 20px; border-radius: 5px; margin-top: 10px; cursor: pointer;">
+            Reload
+          </button>
+        </div>`;
+    }
+
+    function initApp() {
+      try {
+        console.log('Vue:', typeof Vue);
+        console.log('io:', typeof io);
+        
+        if (typeof Vue === 'undefined') {
+          throw new Error('Vue.js is not loaded');
+        }
+        
+        if (typeof io === 'undefined') {
+          throw new Error('Socket.IO is not loaded');
+        }
+
+        const { createApp, ref, onMounted, nextTick } = Vue;
+
+        const app = createApp({
+          setup() {
+            const messages = ref([]);
+            const messagesRef = ref(null);
+            const inputMessage = ref('');
+            const socket = io();
+
+            const scrollToBottom = () => {
+              nextTick(() => {
+                const el = messagesRef.value;
+                if(el) el.scrollTop = el.scrollHeight;
+              });
+            };
+
+            const formatTime = (iso) => {
+              const d = new Date(iso);
+              return d.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+            };
+
+            const sendMessage = () => {
+              const msg = inputMessage.value.trim();
+              if (!msg) return;
+              
+              const localMsg = {
+                sender: 'user',
+                text: msg,
+                avatar: '/avatar.jpg',
+                time: new Date().toISOString(),
+                pending: true
+              };
+              messages.value.push(localMsg);
+              scrollToBottom();
+              
+              socket.emit('newMessage', msg);
+              inputMessage.value = '';
+            };
+
+            onMounted(() => {
+              console.log('Component mounted');
+              
+              socket.on('connect', () => {
+                console.log('Connected to server');
+              });
+
+              socket.on('chatHistory', (history) => {
+                console.log('Received chat history:', history);
+                messages.value = history;
+                scrollToBottom();
+              });
+
+              socket.on('message', (msg) => {
+                console.log('Received message:', msg);
+                if (msg.sender === 'user') {
+                  const idx = messages.value.findIndex(m => m.pending && m.text === msg.text);
+                  if (idx !== -1) {
+                    messages.value.splice(idx, 1, msg);
+                    scrollToBottom();
+                    return;
+                  }
+                }
+                messages.value.push(msg);
+                scrollToBottom();
+              });
+
+              socket.on('connect_error', (err) => {
+                console.error('Connection error:', err);
+              });
+            });
+
+            return {
+              messages,
+              messagesRef,
+              inputMessage,
+              formatTime,
+              sendMessage
+            };
+          }
+        });
+
+        app.mount('#app');
+        showApp();
+        console.log('App initialized successfully');
+        
+      } catch (error) {
+        console.error('Error initializing app:', error);
+        showError('Failed to initialize the application: ' + error.message);
+      }
+    }
+
+    // Initialize after a short delay to ensure scripts are loaded
+    setTimeout(() => {
+      initApp();
+    }, 500);
+  </script>
+</body>
+</html>

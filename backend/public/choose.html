@@ -1,0 +1,26 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Choose your Avatar — Avatar Chat</title>
+    <style>
+      body{font-family:Inter,Arial,Helvetica;background:#000;color:#fff;display:flex;align-items:center;justify-content:center;height:100vh;margin:0}
+      .grid{display:grid;grid-template-columns:repeat(4,200px);gap:18px}
+      .card{background:#111;padding:18px;border-radius:12px;text-align:center;cursor:pointer;border:1px solid rgba(255,255,255,0.04)}
+      .card img{width:120px;height:120px;border-radius:12px;object-fit:cover;margin-bottom:8px}
+      h1{margin-bottom:20px}
+    </style>
+  </head>
+  <body>
+    <div>
+      <h1>Select an avatar</h1>
+      <div class="grid">
+  <a class="card" href="/index.html?persona=dr_gupta"><img src="/avatar3.jpg"/><div>Dr. Gupta</div><div style="opacity:0.7">Medical consultation</div></a>
+  <a class="card" href="/index.html?persona=zoya"><img src="/avatar4.jpg"/><div>Zoya</div><div style="opacity:0.7">Compassionate companion</div></a>
+  <a class="card" href="/index.html?persona=robin"><img src="/avatar5.jpg"/><div>Robin</div><div style="opacity:0.7">Emergency helper</div></a>
+        <a class="card" href="/index.html?persona=rabindr"><img src="/avatar.jpg"/><div>Rabindr</div><div style="opacity:0.7">Poetic discussion</div></a>
+      </div>
+    </div>
+  </body>
+</html>

@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Avatar Chat - Netflix Style</title>
+  <style>
+    body {
+      background: #000000;
+      color: #ffffff;
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 20px;
+    }
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+    }
+    h1 {
+      color: #e50914;
+      text-align: center;
+    }
+    .test-message {
+      background: #333;
+      padding: 10px;
+      border-radius: 8px;
+      margin: 10px 0;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Avatar Chat - Test Page</h1>
+    <div class="test-message">
+      <p>This is a test page to verify the server is working.</p>
+      <p>If you can see this, the backend is serving files correctly.</p>
+    </div>
+    <div id="status">Loading...</div>
+  </div>
+
+  <script>
+    document.getElementById('status').textContent = 'JavaScript is working!';
+    console.log('Test page loaded successfully');
+  </script>
+</body>
+</html>

@@ -1,0 +1,296 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Avatar Chat — Webview</title>
+  <style>
+    :root{--bg:#000;--panel:#141414;--muted:rgba(255,255,255,0.6);--red:#e50914}
+    *{box-sizing:border-box}
+    html,body,#app{height:100%;margin:0}
+    body{background:linear-gradient(135deg,var(--panel) 0%, #000 100%);font-family:Inter,Segoe UI,Arial;color:#fff}
+    .container{max-width:920px;margin:18px auto;height:calc(100% - 36px);display:flex;flex-direction:column;border-radius:10px;overflow:hidden}
+    .header{background:linear-gradient(90deg,var(--red) 0%,#b81d24 100%);padding:18px 22px;display:flex;justify-content:space-between;align-items:center}
+    .brand{font-weight:800;letter-spacing:2px;font-size:22px}
+    .subtitle{font-size:11px;opacity:0.9;margin-top:2px;font-weight:300}
+    .main{flex:1;display:flex;flex-direction:column;background:linear-gradient(180deg,rgba(10,10,10,0.2),transparent);padding:20px;gap:16px}
+    .personas{display:flex;gap:12px}
+    .persona{background:rgba(255,255,255,0.03);padding:10px;border-radius:8px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:8px;width:140px;text-align:center}
+    .persona.active{border:2px solid var(--red)}
+    .persona img{width:72px;height:72px;border-radius:8px;object-fit:cover}
+    .messages{flex:1;overflow:auto;display:flex;flex-direction:column;gap:12px;padding-right:6px}
+    .msg{display:flex;gap:12px;align-items:flex-end;max-width:78%}
+    .msg.incoming{align-self:flex-start}
+    .msg.outgoing{align-self:flex-end;flex-direction:row-reverse}
+    .avatar{width:44px;height:44px;border-radius:10px;flex-shrink:0;background:#333;display:inline-block}
+    .bubble{padding:12px 14px;border-radius:12px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.04);box-shadow:0 6px 18px rgba(0,0,0,0.4);}
+    .bubble.out{background:linear-gradient(135deg,var(--red),#b81d24);}
+    .meta{font-size:11px;color:var(--muted);margin-top:6px;text-align:right}
+    .footer{padding:16px 20px;background:rgba(0,0,0,0.25);display:flex;gap:12px;align-items:center}
+    .input{flex:1;padding:12px 14px;border-radius:10px;border:1px solid rgba(255,255,255,0.06);background:rgba(255,255,255,0.02);color:#fff}
+    .send{background:linear-gradient(135deg,var(--red),#b81d24);border:none;color:#fff;padding:10px 14px;border-radius:10px;cursor:pointer}
+    .link{font-size:12px;color:var(--muted)}
+  </style>
+</head>
+<body>
+  <div id="app">
+    <div class="container" role="main">
+      <div class="header">
+        <div>
+          <div class="brand">AVATAR</div>
+          <div class="subtitle">CHAT — Webview</div>
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px">
+          <div class="profile"><img id="profileImg" src="/avatar.jpg" alt="you" style="width:40px;height:40px;border-radius:8px;border:2px solid rgba(255,255,255,0.2);object-fit:cover"/></div>
+          <div id="personaLabel" style="font-size:11px;opacity:0.9">Choose a persona below</div>
+        </div>
+      </div>
+
+      <div class="main">
+        <div class="personas" id="personaList"></div>
+
+        <div class="messages" id="messages" aria-live="polite"></div>
+
+        <div class="footer">
+          <input id="input" class="input" placeholder="Start your conversation..." aria-label="Message input" />
+          <button id="send" class="send">Send</button>
+          <div style="min-width:160px;text-align:right">
+            <div class="link">Open full app: <a id="openFull" href="#" target="_blank" style="color:#fff">Open</a></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script>
+    (function(){
+      const personas = [
+        { id: 'dr_gupta', label: 'Dr. Gupta', img: '/avatar3.jpg', desc: 'Medical consultation' },
+        { id: 'zoya', label: 'Zoya', img: '/avatar4.jpg', desc: 'Compassionate companion' },
+        { id: 'robin', label: 'Robin', img: '/avatar5.jpg', desc: 'Emergency helper' },
+        { id: 'rabindr', label: 'Rabindr', img: '/avatar.jpg', desc: 'Poetic discussion' }
+      ];
+
+      const personaList = document.getElementById('personaList');
+      const messagesEl = document.getElementById('messages');
+      const inputEl = document.getElementById('input');
+      const sendBtn = document.getElementById('send');
+      const openFull = document.getElementById('openFull');
+      const personaLabel = document.getElementById('personaLabel');
+      const profileImg = document.getElementById('profileImg');
+
+      const useLlmElId = 'useLlm';
+      const medicalConsentElId = 'medicalConsent';
+
+      // create controls area in header (kept simple)
+      const header = document.querySelector('.header');
+      const controlsWrap = document.createElement('div');
+      controlsWrap.style.display = 'flex';
+      controlsWrap.style.flexDirection = 'column';
+      controlsWrap.style.alignItems = 'flex-end';
+      controlsWrap.style.gap = '6px';
+      controlsWrap.innerHTML = `<div style="font-size:11px;opacity:0.9">Controls</div><div style="display:flex;gap:8px;align-items:center"><label style="display:inline-flex;align-items:center;gap:6px"><input id="${useLlmElId}" type="checkbox"/> Use LLM</label><label id="medicalWrap" style="display:inline-flex;align-items:center;gap:6px;opacity:0.9"><input id="${medicalConsentElId}" type="checkbox"/> Medical consent</label></div>`;
+      header.appendChild(controlsWrap);
+
+      let current = personas[0];
+      let items = [];
+      let socket = null;
+      let lastLocalUserMessage = null;
+
+      function renderPersonas(){
+        personaList.innerHTML = '';
+        personas.forEach(p => {
+          const el = document.createElement('div');
+          el.className = 'persona' + (p.id===current.id ? ' active' : '');
+          el.innerHTML = `<img src="${p.img}" alt="${p.label}"/><div style="font-weight:700">${p.label}</div><div style="font-size:12px;opacity:0.8">${p.desc}</div>`;
+          el.addEventListener('click', ()=>{
+            current = p; renderPersonas(); addBotMessage(`You are now chatting with ${p.label}.`); personaLabel.textContent = p.label; profileImg.src = '/avatar.jpg';
+            openFull.href = '/index.html?persona=' + encodeURIComponent(p.id);
+            updateMedicalControls();
+            if(socket && socket.connected){
+              socket.emit('setLLM', !!document.getElementById(useLlmElId).checked);
+              socket.emit('setMedicalConsent', !!document.getElementById(medicalConsentElId).checked);
+            }
+          });
+          personaList.appendChild(el);
+        });
+      }
+
+      function now(){ return new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}); }
+
+      function addUserMessage(text){
+        items.push({sender:'user', text, time:now(), img:'/avatar.jpg'});
+        render();
+      }
+
+      function addBotMessage(text, img){
+        items.push({sender:'bot', text, time:now(), img: img || current.img});
+        render();
+      }
+
+      function generateReply(u){
+        const s = (u||'').toLowerCase();
+        if(current.id==='dr_gupta'){
+          if(s.includes('hello')||s.includes('hi')) return "Hello, I'm Dr. Gupta. Can you tell me when these symptoms started?";
+          if(s.includes('pain')||s.includes('fever')||s.includes('cough')) return "I see — could you describe the severity and exact location?";
+          if(s.includes('?')) return "That's an important question; can you provide more details like duration and associated symptoms?";
+          return "Thanks — can you tell me more about the onset and any other symptoms?";
+        }
+        if(current.id==='zoya'){
+          // crisis detection
+          const crisisKeywords = ['suicide','kill myself','end my life','want to die','hurting myself','harm myself','i cant go on','i can\'t go on','i cant take it'];
+          for (const k of crisisKeywords) {
+            if (s.includes(k)) {
+              return "I'm really sorry you're feeling this way. If you're in immediate danger or might hurt yourself, please contact your local emergency services or a crisis line right now. If you can, tell me whether you're safe at this moment and if someone is nearby who can help — I can also help find crisis resources in your area.";
+            }
+          }
+
+          if (s.includes('hello') || s.includes('hi')) return "Hi — I'm Zoya. I'm here to listen whenever you're ready. What's been on your mind lately?";
+
+          const feelingWords = ['sad','lonely','anxious','anxiety','stressed','overwhelmed','depressed','hopeless','angry','upset','tearful','hurt'];
+          for (const f of feelingWords) {
+            if (s.includes(f)) {
+              return `I hear that you're feeling ${f}. That sounds really difficult — would you like to tell me more about what's been happening or when this started?`;
+            }
+          }
+
+          if (s.includes('help')) return "I'm here for a heart-to-heart. You can tell me anything — no judgement. Would you like to talk about what's been most heavy for you right now?";
+
+          if (s.endsWith('?')) return "That's a thoughtful question — take your time. Would you like my perspective or would you prefer I just listen and reflect what you're saying?";
+
+          const stressHints = ['stress','busy','tired','burnout','overwork','panic','panic attack'];
+          for (const sh of stressHints) {
+            if (s.includes(sh)) {
+              return "That sounds really stressful. When it feels overwhelming, some people try a few grounding steps — breathe slowly for a minute, notice five things you can see, and try to name one small thing that feels manageable. Would you like some ideas tailored to your situation?";
+            }
+          }
+
+          if (s.includes('therap') || s.includes('counsel') || s.includes('doctor') || s.includes('psych')) {
+            return "It can be really brave to seek support. I can help you think through what to look for in a therapist, how to start the conversation, or find resources. What would help most right now?";
+          }
+
+          return "Thank you for trusting me with this. I'm here to support you — tell me more about what you're feeling or what happened, and we'll take it one step at a time.";
+        }
+        if(current.id==='robin'){
+          if(s.includes('fire')||s.includes('emergency')||s.includes('help')) return "If this is an actual emergency, call local emergency services now. Describe the situation and your location.";
+          return "Stay calm — tell me what's happening and I'll guide you with immediate steps.";
+        }
+        if(current.id==='rabindr'){
+          return `A small verse for you: "${shortPoem(u)}"`;
+        }
+        return "Thanks for sharing.";
+      }
+
+      function shortPoem(seed){
+        const word = (seed||'soft').split(' ')[0];
+        return `In quiet ${word} the echoes flow, a hush that helps the rivers grow.`;
+      }
+
+      function render(){
+        messagesEl.innerHTML = '';
+        items.forEach(it=>{
+          const row = document.createElement('div');
+          row.className = 'msg ' + (it.sender==='user' ? 'outgoing' : 'incoming');
+          const avatar = document.createElement('div'); avatar.className='avatar';
+          avatar.style.backgroundImage = 'url('+ (it.img || '/avatar2.jpg') +')'; avatar.style.backgroundSize='cover';
+          const bubble = document.createElement('div'); bubble.className='bubble'+(it.sender==='user' ? ' out' : '');
+          const label = '<div style="font-size:11px;font-weight:600;margin-bottom:6px;">'+(it.sender==='user' ? 'You' : current.label)+'</div>';
+          bubble.innerHTML = label + '<div>'+escapeHtml(it.text)+'</div><div class="meta">'+it.time+'</div>';
+          row.appendChild(avatar);
+          row.appendChild(bubble);
+          messagesEl.appendChild(row);
+        });
+        messagesEl.scrollTop = messagesEl.scrollHeight;
+      }
+
+      function escapeHtml(s){ return String(s).replace(/[&<>'"]/g, function(m){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":"&#39;"}[m];}); }
+
+      function doSend(){
+        const t = inputEl.value.trim(); if(!t) return; inputEl.value=''; addUserMessage(t);
+        lastLocalUserMessage = t;
+        if(socket && socket.connected){
+          socket.emit('newMessage', { text: t, persona: current.id });
+        } else {
+          setTimeout(()=>{ addBotMessage(generateReply(t)); }, 450);
+        }
+      }
+
+      sendBtn.addEventListener('click', doSend);
+      inputEl.addEventListener('keydown', function(e){ if(e.key==='Enter') doSend(); });
+
+      // controls
+      function updateMedicalControls(){
+        const useLlmEl = document.getElementById(useLlmElId);
+        const medicalEl = document.getElementById(medicalConsentElId);
+        const medicalWrap = document.getElementById('medicalWrap');
+        if(current.id === 'dr_gupta'){
+          medicalWrap.style.display = 'inline-flex';
+          medicalEl.disabled = !useLlmEl.checked;
+          medicalWrap.style.opacity = useLlmEl.checked ? '1' : '0.6';
+        } else {
+          medicalWrap.style.display = 'none';
+        }
+      }
+
+      document.addEventListener('change', (ev)=>{
+        if(!ev.target) return;
+        if(ev.target.id === useLlmElId){
+          if(socket && socket.connected) socket.emit('setLLM', !!ev.target.checked);
+          updateMedicalControls();
+        }
+        if(ev.target.id === medicalConsentElId){
+          if(socket && socket.connected) socket.emit('setMedicalConsent', !!ev.target.checked);
+        }
+      });
+
+      // socket.io wiring
+      function initSocket(){
+        try{
+          socket = io();
+        }catch(e){
+          console.warn('Socket.io not available', e);
+          return;
+        }
+
+        socket.on('connect', ()=>{
+          console.log('webview connected to socket');
+          const useLlm = !!document.getElementById(useLlmElId).checked;
+          const med = !!document.getElementById(medicalConsentElId).checked;
+          socket.emit('setLLM', useLlm);
+          socket.emit('setMedicalConsent', med);
+          // request clean history if server sends on connect
+        });
+
+        socket.on('chatHistory', (hist)=>{
+          if(!Array.isArray(hist)) return;
+          items = [];
+          hist.forEach(m => {
+            if(m.persona && m.persona !== current.id) return;
+            if(m.sender==='user') items.push({sender:'user', text:m.text, time:m.time || now(), img:'/avatar.jpg'});
+            else items.push({sender:'bot', text:m.text, time:m.time || now(), img:m.avatar || current.img});
+          });
+          render();
+        });
+
+        socket.on('message', (m)=>{
+          if(!m || (m.persona && m.persona !== current.id)) return;
+          if(m.sender === 'user' && lastLocalUserMessage && m.text === lastLocalUserMessage){ lastLocalUserMessage = null; return; }
+          if(m.sender === 'user') addUserMessage(m.text);
+          else addBotMessage(m.text, m.avatar);
+        });
+
+        socket.on('disconnect', ()=>{ console.log('socket disconnected'); });
+      }
+
+      // init
+      renderPersonas();
+      addBotMessage('Welcome — pick a persona to start.');
+      openFull.href = '/index.html?persona=' + encodeURIComponent(current.id);
+      personaLabel.textContent = current.label;
+      updateMedicalControls();
+      initSocket();
+    })();
+  </script>
+</body>
+</html>

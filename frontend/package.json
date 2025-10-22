@@ -1,0 +1,17 @@
+{
+  "name": "avatar-chat-frontend",
+  "version": "1.0.0",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "serve": "vite preview"
+  },
+  "dependencies": {
+    "socket.io-client": "^4.7.1",
+    "vue": "^3.2.37"
+  },
+  "devDependencies": {
+    "vite": "^3.0.0",
+    "@vitejs/plugin-vue": "^3.0.0"
+  }
+}
