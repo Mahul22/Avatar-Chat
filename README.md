@@ -32,11 +32,18 @@
 
 <img width="1153" height="863" alt="Screenshot 2025-10-21 122321" src="https://github.com/user-attachments/assets/df0c504e-64d2-4750-bfdb-e10ace11decb" />
 
+
+
 <img width="1157" height="528" alt="Screenshot 2025-10-21 122349" src="https://github.com/user-attachments/assets/607252f9-d3fe-47a4-9fe5-5e626d2feccf" />
+
+
 
 <img width="1158" height="771" alt="Screenshot 2025-10-21 123820" src="https://github.com/user-attachments/assets/01f245d9-821f-48ae-b967-1ffaa392e39e" />
 
+
+
 <img width="1189" height="777" alt="Screenshot 2025-10-21 123942" src="https://github.com/user-attachments/assets/a3a41b8e-2c44-495c-886e-a48fe55ea21e" />
+
 
 
 📌 Future Improvements
