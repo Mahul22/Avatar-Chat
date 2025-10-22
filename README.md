@@ -48,6 +48,7 @@
 
 📌 Future Improvements
 
+- Implementation of a solely Avatar based communication Portal.
 - Voice chat integration
 - Avatar customization options
 - More balanced and context-based real time responses
