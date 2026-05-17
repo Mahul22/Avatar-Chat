@@ -1,4 +1,4 @@
-# 🧑‍🚀 Avatar Chat
+# Avatar Chat
 
 **Avatar Chat** is a real-time chat application that allows users to interact with each other using customizable avatars in a shared virtual space. Built using **Three.js**, **Socket.io**, and **JavaScript**, this project demonstrates the integration of 3D rendering with real-time communication.
 
@@ -46,7 +46,7 @@
 
 
 
-📌 Future Improvements
+ Future Improvements
 
 - Implementation of a solely Avatar based communication Portal.
 - Voice chat integration
@@ -56,7 +56,7 @@
 - Mobile responsiveness
 
 
-🤝 Contributing
+ Contributing
 Contributions are welcome! Please fork the repo and submit a pull request.
 
 
