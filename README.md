@@ -2,7 +2,7 @@
 
 **Avatar Chat** is a real-time chat application that allows users to interact with each other using customizable avatars in a shared virtual space. Built using **Three.js**, **Socket.io**, and **JavaScript**, this project demonstrates the integration of 3D rendering with real-time communication.
 
----
+
 
 ##  Features
 
@@ -12,7 +12,7 @@
 - Clean swapping between avatars for a versatile interaction.
 - Consent is being taken before medical disease-based communication.
 
----
+
 
 ##  Tech Stack
 
@@ -22,13 +22,15 @@
 - **HTML/CSS** – UI and layout
 - **Gemini API** - For Generative AI based response for providing a real-time environment.
 
----
+
 
 ## How to Run Locally
 - git clone https://github.com/Mahul22/Avatar-Chat.git
 - cd Avatar-Chat
 - npm install  
 - node server.js
+
+
 
 <img width="1153" height="863" alt="Screenshot 2025-10-21 122321" src="https://github.com/user-attachments/assets/df0c504e-64d2-4750-bfdb-e10ace11decb" />
 
