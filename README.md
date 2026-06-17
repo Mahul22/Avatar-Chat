@@ -35,6 +35,8 @@
 <img width="1153" height="863" alt="Screenshot 2025-10-21 122321" src="https://github.com/user-attachments/assets/df0c504e-64d2-4750-bfdb-e10ace11decb" />
 
 
+## Avatar Based Context-Sensitive Information
+
 
 <img width="1157" height="528" alt="Screenshot 2025-10-21 122349" src="https://github.com/user-attachments/assets/607252f9-d3fe-47a4-9fe5-5e626d2feccf" />
 
